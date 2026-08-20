@@ -53,7 +53,7 @@ stages:
       displayName: 'Check Generated JAR'
 
     # -----------------------------------------------------
-    # Copy JAR to artifact staging directory
+    # Copy Maven JAR
     # -----------------------------------------------------
     - task: CopyFiles@2
       displayName: 'Copy Maven JAR'
@@ -123,13 +123,13 @@ stages:
       displayName: 'Check Docker'
 
     # -----------------------------------------------------
-    # Build Docker image and push to ACR
+    # Build and Push Docker Image to ACR
     # -----------------------------------------------------
     - task: Docker@2
       displayName: 'Build and Push Docker Image to ACR'
       inputs:
         command: buildAndPush
-        containerRegistry: 'b13'
+        containerRegistry: 'acr-connection'
         repository: 'maven-webapp'
         Dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
         tags: |

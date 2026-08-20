@@ -18,6 +18,9 @@ stages:
 
     steps:
 
+    # -----------------------------------------------------
+    # Checkout source code
+    # -----------------------------------------------------
     - checkout: self
 
     # -----------------------------------------------------
@@ -44,19 +47,33 @@ stages:
         mavenVersionOption: 'Default'
 
     # -----------------------------------------------------
-    # Verify JAR
+    # Verify Maven JAR
     # -----------------------------------------------------
     - script: |
-        echo "Generated files:"
+        echo "======================================"
+        echo "GENERATED FILES"
+        echo "======================================"
+
         ls -lh $(Build.SourcesDirectory)/target
 
         echo ""
-        echo "Checking JAR manifest:"
-        unzip -p $(Build.SourcesDirectory)/target/599-1.0.2.jar META-INF/MANIFEST.MF
-      displayName: 'Verify Executable JAR'
+        echo "======================================"
+        echo "JAR CONTENTS"
+        echo "======================================"
+
+        jar tf $(Build.SourcesDirectory)/target/599-1.0.3.jar | head -30
+
+        echo ""
+        echo "======================================"
+        echo "RUNNING JAR"
+        echo "======================================"
+
+        java -jar $(Build.SourcesDirectory)/target/599-1.0.3.jar
+
+      displayName: 'Verify Maven JAR'
 
     # -----------------------------------------------------
-    # Copy JAR
+    # Copy Maven JAR
     # -----------------------------------------------------
     - task: CopyFiles@2
       displayName: 'Copy Maven JAR'
@@ -100,6 +117,9 @@ stages:
 
     steps:
 
+    # -----------------------------------------------------
+    # Checkout source code
+    # -----------------------------------------------------
     - checkout: self
 
     # -----------------------------------------------------
@@ -112,7 +132,7 @@ stages:
       displayName: 'Check Java and Maven'
 
     # -----------------------------------------------------
-    # Authenticate Azure Artifacts
+    # Authenticate with Azure Artifacts
     # -----------------------------------------------------
     - task: MavenAuthenticate@0
       displayName: 'Authenticate with Azure Artifacts'
@@ -152,7 +172,7 @@ stages:
     steps:
 
     # -----------------------------------------------------
-    # Download Build Artifact
+    # Download artifact from Stage 1
     # -----------------------------------------------------
     - task: DownloadPipelineArtifact@2
       displayName: 'Download Maven Build Artifact'
@@ -162,10 +182,13 @@ stages:
         targetPath: '$(Build.SourcesDirectory)'
 
     # -----------------------------------------------------
-    # Verify downloaded files
+    # Check downloaded files
     # -----------------------------------------------------
     - script: |
-        echo "Downloaded files:"
+        echo "======================================"
+        echo "DOWNLOADED ARTIFACT"
+        echo "======================================"
+
         find $(Build.SourcesDirectory) -maxdepth 3 -type f -print
       displayName: 'Check Downloaded Artifact'
 
@@ -173,12 +196,16 @@ stages:
     # Check Docker
     # -----------------------------------------------------
     - script: |
+        echo "Docker version:"
         docker --version
+
+        echo ""
+        echo "Docker info:"
         docker info
       displayName: 'Check Docker'
 
     # -----------------------------------------------------
-    # Build and Push Image
+    # Build and Push Docker Image
     # -----------------------------------------------------
     - task: Docker@2
       displayName: 'Build and Push Docker Image to ACR'
@@ -203,7 +230,7 @@ stages:
 
   jobs:
   - job: RunContainer
-    displayName: 'Run and Verify Docker Container'
+    displayName: 'Pull Run and Verify Docker Container'
 
     steps:
 
@@ -211,12 +238,16 @@ stages:
     # Check Docker
     # -----------------------------------------------------
     - script: |
+        echo "Docker version:"
         docker --version
+
+        echo ""
+        echo "Docker info:"
         docker info
       displayName: 'Check Docker'
 
     # -----------------------------------------------------
-    # Login to ACR
+    # Login to Azure / ACR
     # -----------------------------------------------------
     - task: AzureCLI@2
       displayName: 'Login to Azure Container Registry'
@@ -226,46 +257,61 @@ stages:
         scriptLocation: 'inlineScript'
         inlineScript: |
           echo "Logging into ACR..."
-          az acr login --name abc20092025acr
+
+          az acr login \
+            --name abc20092025acr
+
+          echo "ACR login successful."
 
     # -----------------------------------------------------
-    # Pull Latest Image
+    # Pull Docker Image
     # -----------------------------------------------------
     - script: |
-        echo "Pulling latest image..."
+        echo "======================================"
+        echo "PULLING IMAGE FROM ACR"
+        echo "======================================"
+
         docker pull abc20092025acr.azurecr.io/maven-webapp:latest
+
       displayName: 'Pull Docker Image from ACR'
 
     # -----------------------------------------------------
-    # Remove Existing Container
+    # Remove existing container
     # -----------------------------------------------------
     - script: |
-        echo "Removing old container if it exists..."
+        echo "Removing existing container if present..."
+
         docker rm -f maven-webapp 2>/dev/null || true
+
       displayName: 'Remove Existing Container'
 
     # -----------------------------------------------------
-    # Run Container
+    # Run Docker Container
     # -----------------------------------------------------
     - script: |
-        echo "Starting container..."
+        echo "======================================"
+        echo "STARTING CONTAINER"
+        echo "======================================"
 
         docker run -d \
           --name maven-webapp \
           abc20092025acr.azurecr.io/maven-webapp:latest
 
+        echo ""
+        echo "Container created."
+
       displayName: 'Run Docker Container'
 
     # -----------------------------------------------------
-    # Wait for Application
+    # Wait for application
     # -----------------------------------------------------
     - script: |
-        echo "Waiting for container to finish..."
+        echo "Waiting for application..."
         sleep 5
       displayName: 'Wait for Container'
 
     # -----------------------------------------------------
-    # Verify Container
+    # Verify Docker Container
     # -----------------------------------------------------
     - script: |
         echo "======================================"
@@ -283,7 +329,7 @@ stages:
 
         echo ""
         echo "======================================"
-        echo "CONTAINER STATE"
+        echo "CONTAINER STATUS"
         echo "======================================"
 
         STATUS=$(docker inspect maven-webapp \
@@ -297,17 +343,22 @@ stages:
 
         echo ""
         echo "======================================"
-        echo "VERIFYING APPLICATION OUTPUT"
+        echo "VERIFY APPLICATION OUTPUT"
         echo "======================================"
 
         LOGS=$(docker logs maven-webapp 2>&1)
 
         if echo "$LOGS" | grep -q "Hello World!"; then
-          echo "SUCCESS: Application output verified."
+          echo "SUCCESS: Hello World! found."
         else
-          echo "ERROR: Expected 'Hello World!' was not found."
+          echo "ERROR: Hello World! not found."
           exit 1
         fi
+
+        echo ""
+        echo "======================================"
+        echo "VERIFY EXIT CODE"
+        echo "======================================"
 
         if [ "$EXIT_CODE" -eq 0 ]; then
           echo "SUCCESS: Container exited successfully."
@@ -321,10 +372,17 @@ stages:
         echo "DOCKER VERIFICATION SUCCESSFUL"
         echo "======================================"
 
+      displayName: 'Verify Docker Container'
+
     # -----------------------------------------------------
     # Cleanup
     # -----------------------------------------------------
     - script: |
+        echo "Cleaning up container..."
+
         docker rm -f maven-webapp 2>/dev/null || true
+
+        echo "Cleanup completed."
+
       displayName: 'Cleanup Container'
       condition: always()

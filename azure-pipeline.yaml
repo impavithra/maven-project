@@ -27,8 +27,8 @@ stages:
         goals: 'clean package'
         publishJUnitResults: true
         testResultsFiles: '**/surefire-reports/TEST-*.xml'
-        javaHomeOption: 'Path'
-        jdkDirectory: '$(JAVA_HOME)'
+        javaHomeOption: 'JDKVersion'
+        jdkVersionOption: '1.17'
         mavenVersionOption: 'Default'
 
     - task: CopyFiles@2

@@ -18,7 +18,9 @@ stages:
 
     steps:
 
+    # -----------------------------------------------------
     # Checkout source code
+    # -----------------------------------------------------
     - checkout: self
 
     # -----------------------------------------------------
@@ -45,7 +47,7 @@ stages:
         mavenVersionOption: 'Default'
 
     # -----------------------------------------------------
-    # Check generated JAR
+    # Show generated files
     # -----------------------------------------------------
     - script: |
         echo "Generated files:"
@@ -53,7 +55,7 @@ stages:
       displayName: 'Check Generated JAR'
 
     # -----------------------------------------------------
-    # Copy Maven JAR
+    # Copy JAR to artifact staging directory
     # -----------------------------------------------------
     - task: CopyFiles@2
       displayName: 'Copy Maven JAR'
@@ -71,6 +73,14 @@ stages:
         SourceFolder: '$(Build.SourcesDirectory)'
         Contents: 'Dockerfile'
         TargetFolder: '$(Build.ArtifactStagingDirectory)'
+
+    # -----------------------------------------------------
+    # Show artifact contents
+    # -----------------------------------------------------
+    - script: |
+        echo "Artifact staging directory:"
+        find $(Build.ArtifactStagingDirectory) -maxdepth 3 -type f -print
+      displayName: 'Check Build Artifact'
 
     # -----------------------------------------------------
     # Publish JAR + Dockerfile
@@ -108,7 +118,7 @@ stages:
         targetPath: '$(Build.SourcesDirectory)'
 
     # -----------------------------------------------------
-    # Check downloaded files
+    # Check downloaded artifact
     # -----------------------------------------------------
     - script: |
         echo "Downloaded artifact contents:"
@@ -116,11 +126,32 @@ stages:
       displayName: 'Check Downloaded Artifact'
 
     # -----------------------------------------------------
-    # Check Docker
+    # Check Docker installation
     # -----------------------------------------------------
     - script: |
+        echo "Docker version:"
         docker --version
+
+        echo "Docker context:"
+        docker context show
+
+        echo "Available Docker contexts:"
+        docker context ls
       displayName: 'Check Docker'
+
+    # -----------------------------------------------------
+    # Configure Colima Docker socket
+    # -----------------------------------------------------
+    - script: |
+        echo "Setting Colima Docker socket..."
+
+        export DOCKER_HOST=unix:///Users/pavi/.colima/default/docker.sock
+
+        echo "DOCKER_HOST=$DOCKER_HOST"
+
+        echo "Testing Docker connection..."
+        docker info
+      displayName: 'Connect to Colima Docker'
 
     # -----------------------------------------------------
     # Build and Push Docker Image to ACR
@@ -135,3 +166,5 @@ stages:
         tags: |
           $(Build.BuildId)
           latest
+      env:
+        DOCKER_HOST: unix:///Users/pavi/.colima/default/docker.sock

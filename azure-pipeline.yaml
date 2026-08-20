@@ -61,14 +61,14 @@ stages:
         echo "JAR CONTENTS"
         echo "======================================"
 
-        jar tf $(Build.SourcesDirectory)/target/599-1.0.4.jar | head -30
+        jar tf $(Build.SourcesDirectory)/target/599-1.0.5.jar | head -30
 
         echo ""
         echo "======================================"
         echo "RUNNING JAR"
         echo "======================================"
 
-        java -jar $(Build.SourcesDirectory)/target/599-1.0.4.jar
+        java -jar $(Build.SourcesDirectory)/target/599-1.0.5.jar
 
       displayName: 'Verify Maven JAR'
 

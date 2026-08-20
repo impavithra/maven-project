@@ -6,9 +6,9 @@ pool:
 
 stages:
 
-# =========================
+# =========================================================
 # STAGE 1: BUILD
-# =========================
+# =========================================================
 - stage: Build
   displayName: 'Stage 1 - Build Maven Project'
 
@@ -20,6 +20,14 @@ stages:
 
     - checkout: self
 
+    # Check Java and Maven
+    - script: |
+        echo "JAVA_HOME=$JAVA_HOME"
+        java -version
+        mvn -version
+      displayName: 'Check Java and Maven'
+
+    # Build Maven project
     - task: Maven@4
       displayName: 'Maven Clean Package'
       inputs:
@@ -31,13 +39,15 @@ stages:
         jdkDirectory: '$(JAVA_HOME)'
         mavenVersionOption: 'Default'
 
+    # Copy generated JAR
     - task: CopyFiles@2
-      displayName: 'Copy Maven Artifact'
+      displayName: 'Copy Maven JAR'
       inputs:
         SourceFolder: '$(Build.SourcesDirectory)/target'
-        Contents: '*.war'
+        Contents: '*.jar'
         TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
+    # Publish pipeline artifact
     - task: PublishPipelineArtifact@1
       displayName: 'Publish Build Artifact'
       inputs:
@@ -45,11 +55,12 @@ stages:
         artifact: 'maven-package'
 
 
-# =========================
-# STAGE 2: PUBLISH
-# =========================
+# =========================================================
+# STAGE 2: PUBLISH TO AZURE ARTIFACTS
+# =========================================================
 - stage: Publish
   displayName: 'Stage 2 - Publish to Azure Artifacts'
+
   dependsOn: Build
   condition: succeeded()
 
@@ -61,11 +72,20 @@ stages:
 
     - checkout: self
 
+    # Check Java and Maven
+    - script: |
+        echo "JAVA_HOME=$JAVA_HOME"
+        java -version
+        mvn -version
+      displayName: 'Check Java and Maven'
+
+    # Authenticate with Azure Artifacts feed
     - task: MavenAuthenticate@0
       displayName: 'Authenticate with Azure Artifacts'
       inputs:
-        artifactsFeeds: 'maven-feed'
+        artifactsFeeds: 'pavip7547'
 
+    # Publish Maven package
     - task: Maven@4
       displayName: 'Publish Maven Package'
       inputs:

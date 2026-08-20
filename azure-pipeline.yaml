@@ -18,16 +18,21 @@ stages:
 
     steps:
 
+    # Checkout source code
     - checkout: self
 
+    # -----------------------------------------------------
     # Check Java and Maven
+    # -----------------------------------------------------
     - script: |
         echo "JAVA_HOME=$JAVA_HOME"
         java -version
         mvn -version
       displayName: 'Check Java and Maven'
 
+    # -----------------------------------------------------
     # Build Maven project
+    # -----------------------------------------------------
     - task: Maven@4
       displayName: 'Maven Clean Package'
       inputs:
@@ -39,13 +44,17 @@ stages:
         jdkDirectory: '$(JAVA_HOME)'
         mavenVersionOption: 'Default'
 
-    # Show generated JAR
+    # -----------------------------------------------------
+    # Check generated JAR
+    # -----------------------------------------------------
     - script: |
         echo "Generated files:"
         ls -lh $(Build.SourcesDirectory)/target
       displayName: 'Check Generated JAR'
 
-    # Copy generated JAR
+    # -----------------------------------------------------
+    # Copy JAR to artifact staging directory
+    # -----------------------------------------------------
     - task: CopyFiles@2
       displayName: 'Copy Maven JAR'
       inputs:
@@ -53,7 +62,9 @@ stages:
         Contents: '*.jar'
         TargetFolder: '$(Build.ArtifactStagingDirectory)/target'
 
+    # -----------------------------------------------------
     # Copy Dockerfile
+    # -----------------------------------------------------
     - task: CopyFiles@2
       displayName: 'Copy Dockerfile'
       inputs:
@@ -61,9 +72,11 @@ stages:
         Contents: 'Dockerfile'
         TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
-    # Publish JAR + Dockerfile as pipeline artifact
+    # -----------------------------------------------------
+    # Publish JAR + Dockerfile
+    # -----------------------------------------------------
     - task: PublishPipelineArtifact@1
-      displayName: 'Publish Build Artifact'
+      displayName: 'Publish Maven Build Artifact'
       inputs:
         targetPath: '$(Build.ArtifactStagingDirectory)'
         artifact: 'maven-package'
@@ -84,7 +97,9 @@ stages:
 
     steps:
 
+    # -----------------------------------------------------
     # Download artifact from Stage 1
+    # -----------------------------------------------------
     - task: DownloadPipelineArtifact@2
       displayName: 'Download Maven Build Artifact'
       inputs:
@@ -92,18 +107,29 @@ stages:
         artifactName: 'maven-package'
         targetPath: '$(Build.SourcesDirectory)'
 
+    # -----------------------------------------------------
     # Check downloaded files
+    # -----------------------------------------------------
     - script: |
-        echo "Downloaded files:"
+        echo "Downloaded artifact contents:"
         find $(Build.SourcesDirectory) -maxdepth 3 -type f -print
       displayName: 'Check Downloaded Artifact'
 
-    # Build and push Docker image
+    # -----------------------------------------------------
+    # Check Docker
+    # -----------------------------------------------------
+    - script: |
+        docker --version
+      displayName: 'Check Docker'
+
+    # -----------------------------------------------------
+    # Build Docker image and push to ACR
+    # -----------------------------------------------------
     - task: Docker@2
-      displayName: 'Build and Push Docker Image'
+      displayName: 'Build and Push Docker Image to ACR'
       inputs:
         command: buildAndPush
-        containerRegistry: 'YOUR-ACR-SERVICE-CONNECTION'
+        containerRegistry: 'b13'
         repository: 'maven-webapp'
         Dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
         tags: |

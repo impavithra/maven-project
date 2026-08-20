@@ -2,7 +2,7 @@ trigger:
 - main
 
 pool:
-  Agentpool: agent1
+  name: Pv-agent
 
 stages:
 

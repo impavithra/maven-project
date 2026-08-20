@@ -26,6 +26,7 @@
     <!-- Dependencies -->
     <dependencies>
 
+        <!-- JUnit -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -40,11 +41,14 @@
 
         <repository>
             <id>pavip7547</id>
-            <url>https://pkgs.dev.azure.com/pavip7547/_packaging/pavip7547/maven/v1</url>
+            <url>
+                https://pkgs.dev.azure.com/pavip7547/_packaging/pavip7547/maven/v1
+            </url>
 
             <releases>
                 <enabled>true</enabled>
             </releases>
+
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>
@@ -57,25 +61,27 @@
 
         <plugins>
 
-            <!-- Compile Java -->
+            <!-- Java Compiler -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
             </plugin>
 
-            <!-- Create executable JAR -->
+            <!-- Create Executable JAR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.4.2</version>
+
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.example.App</mainClass>
+                            <mainClass>mvn.App</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
+
             </plugin>
 
             <!-- Unit Tests -->

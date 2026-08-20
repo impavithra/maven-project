@@ -72,6 +72,6 @@ stages:
         mavenPomFile: 'pom.xml'
         goals: 'deploy'
         publishJUnitResults: false
-        javaHomeOption: 'JDKVersion'
-        jdkVersionOption: '1.17'
+        javaHomeOption: 'Path'
+        jdkDirectory: '$(JAVA_HOME)'
         mavenVersionOption: 'Default'

@@ -1,0 +1,77 @@
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+
+# =========================
+# STAGE 1: BUILD
+# =========================
+- stage: Build
+  displayName: 'Stage 1 - Build Maven Project'
+
+  jobs:
+  - job: MavenBuild
+    displayName: 'Build Maven Application'
+
+    steps:
+
+    - checkout: self
+
+    - task: Maven@4
+      displayName: 'Maven Clean Package'
+      inputs:
+        mavenPomFile: 'pom.xml'
+        goals: 'clean package'
+        publishJUnitResults: true
+        testResultsFiles: '**/surefire-reports/TEST-*.xml'
+        javaHomeOption: 'JDKVersion'
+        jdkVersionOption: '1.17'
+        mavenVersionOption: 'Default'
+
+    - task: CopyFiles@2
+      displayName: 'Copy Maven Artifact'
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)/target'
+        Contents: '*.war'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)'
+
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Build Artifact'
+      inputs:
+        targetPath: '$(Build.ArtifactStagingDirectory)'
+        artifact: 'maven-package'
+
+
+# =========================
+# STAGE 2: PUBLISH
+# =========================
+- stage: Publish
+  displayName: 'Stage 2 - Publish to Azure Artifacts'
+  dependsOn: Build
+  condition: succeeded()
+
+  jobs:
+  - job: PublishMaven
+    displayName: 'Publish Maven Package'
+
+    steps:
+
+    - checkout: self
+
+    - task: MavenAuthenticate@0
+      displayName: 'Authenticate with Azure Artifacts'
+      inputs:
+        artifactsFeeds: 'maven-feed'
+
+    - task: Maven@4
+      displayName: 'Publish Maven Package'
+      inputs:
+        mavenPomFile: 'pom.xml'
+        goals: 'deploy'
+        publishJUnitResults: false
+        javaHomeOption: 'JDKVersion'
+        jdkVersionOption: '1.17'
+        mavenVersionOption: 'Default'

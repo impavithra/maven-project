@@ -10,7 +10,7 @@
     <!-- Project Information -->
     <groupId>maven</groupId>
     <artifactId>599</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
     <packaging>jar</packaging>
 
     <name>599</name>
